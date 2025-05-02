@@ -46,8 +46,8 @@ fn main() -> Result<(), io::Error> {
                 return Ok(());
             }
         }
-    } else if input_suffix.contains("-P") {
-        match input_suffix.split("-P").nth(1) {
+    } else if input_suffix.contains("-i") || input_suffix.contains("--ignore-case") {
+        match input_suffix.split("-i").nth(1) {
             Some(suffix) => input_suffix = suffix.trim().to_string(),
             None => input_suffix = "".to_string(),
         }
