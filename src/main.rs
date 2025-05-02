@@ -26,7 +26,7 @@ fn read_input_command_suffix() -> Result<String, io::Error> {
 
 fn main() -> Result<(), io::Error> {
     let input_prefix = read_input_command_prefix()?;
-    let input_suffix = read_input_command_suffix()?;
+    let mut input_suffix = read_input_command_suffix()?;
 
     if input_suffix.is_empty() {
         println!("{}", input_prefix);
@@ -46,8 +46,18 @@ fn main() -> Result<(), io::Error> {
                 return Ok(());
             }
         }
+    } else if input_suffix.contains("-P") {
+        match input_suffix.split("-P").nth(1) {
+            Some(suffix) => input_suffix = suffix.trim().to_string(),
+            None => input_suffix = "".to_string(),
+        }
+        let positions = simple_pattern(&input_prefix, &input_suffix, true);
+        let pattern_len = input_suffix.len();
+        for pos in positions {
+            matches.push((pos, pattern_len));
+        }
     } else {
-        let positions = simple_pattern(&input_prefix, &input_suffix);
+        let positions = simple_pattern(&input_prefix, &input_suffix, false);
         let pattern_len = input_suffix.len();
         for pos in positions {
             matches.push((pos, pattern_len));
