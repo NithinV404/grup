@@ -1,15 +1,20 @@
 use std::cmp::max;
 
-fn badcharheuristic(s: &str) -> Vec<i32> {
+/* Function to calculate the bad character heuristic by mapping the characters usize values
+or ASCII equivalent with position of the character in the pattern*/
+
+//Helper function to calculate the bad character heuristic
+fn badcharheuristic(s: &str) -> Vec<usize> {
     let ascii_char = 256;
-    let mut bad_char = vec![-1; ascii_char];
+    let mut bad_char = vec![usize::MAX; ascii_char];
     for (i, c) in s.chars().enumerate() {
-        bad_char[c as usize] = i as i32;
+        bad_char[c as usize] = i;
     }
     bad_char
 }
 
-pub fn simple_pattern(text: &str, pattern: &str) -> Vec<i32> {
+/* Uses Boyer-Moore algorithm take text and pattern as input*/
+pub fn simple_pattern(text: &str, pattern: &str) -> Vec<usize> {
     let text_bytes = text.as_bytes();
     let pattern_bytes = pattern.as_bytes();
     let pattern_len = pattern_bytes.len();
@@ -25,10 +30,10 @@ pub fn simple_pattern(text: &str, pattern: &str) -> Vec<i32> {
         }
 
         if j < 0 {
-            index.push(skip as i32);
+            index.push(skip);
             skip += if skip + pattern_len < text_len {
                 let bad_char_value = bad_char[text_bytes[skip + pattern_len] as usize];
-                if bad_char_value < 0 {
+                if bad_char_value == usize::MAX {
                     pattern_len
                 } else {
                     pattern_len - bad_char_value as usize
@@ -38,8 +43,8 @@ pub fn simple_pattern(text: &str, pattern: &str) -> Vec<i32> {
             };
         } else {
             let text_char = text_bytes[skip + j as usize] as usize;
-            let shift = max(1, j - bad_char[text_char]) as usize;
-            skip += shift;
+            let shift = max(1, j - bad_char[text_char] as i32);
+            skip += shift as usize;
         }
     }
     index

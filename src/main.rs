@@ -1,11 +1,13 @@
 mod patterns;
 use colored::*;
 use libc::{STDIN_FILENO, isatty};
+use patterns::regex::regex_match;
 use patterns::simple::simple_pattern;
+use regex::Regex;
 use std::env;
 use std::io::{self, Read};
 
-fn read_input_left() -> Result<String, io::Error> {
+fn read_input_command_prefix() -> Result<String, io::Error> {
     unsafe {
         if isatty(STDIN_FILENO as i32) == 0 {
             let mut buffer = String::new();
@@ -17,32 +19,60 @@ fn read_input_left() -> Result<String, io::Error> {
     }
 }
 
-fn read_input_right() -> Result<String, io::Error> {
-    let buffer = env::args().skip(1).collect();
-    Ok(buffer)
+fn read_input_command_suffix() -> Result<String, io::Error> {
+    let args: Vec<String> = env::args().skip(1).collect();
+    Ok(args.join(" "))
 }
 
 fn main() -> Result<(), io::Error> {
-    let input_left = read_input_left()?;
-    let input_right = read_input_right()?;
-    let indices = simple_pattern(&input_left, &input_right);
-    let mut result = String::new();
-    let mut current_pos = 0;
-    let mut sorted_indices = indices.clone();
-    sorted_indices.sort();
-    for &pos in &sorted_indices {
-        let start = pos as usize;
-        let end = start + input_right.len();
+    let input_prefix = read_input_command_prefix()?;
+    let input_suffix = read_input_command_suffix()?;
 
-        result.push_str(&input_left[current_pos..start]);
-
-        result.push_str(&format!("{}", &input_left[start..end].yellow()));
-
-        current_pos = end;
+    if input_suffix.is_empty() {
+        println!("{}", input_prefix);
+        return Ok(());
     }
-    result.push_str(&input_left[current_pos..]);
+
+    let regex_metachar_pattern = Regex::new("[.^$*+?()\\[\\]{}|\\\\]").unwrap();
+    let is_regex = regex_metachar_pattern.is_match(&input_suffix);
+
+    let mut matches = Vec::new();
+
+    if is_regex {
+        match regex_match(&input_prefix, &input_suffix) {
+            Ok(result) => matches = result,
+            Err(e) => {
+                eprintln!("Invalid regex pattern: {}", e);
+                return Ok(());
+            }
+        }
+    } else {
+        let positions = simple_pattern(&input_prefix, &input_suffix);
+        let pattern_len = input_suffix.len();
+        for pos in positions {
+            matches.push((pos, pattern_len));
+        }
+    }
+
+    if matches.is_empty() {
+        println!("{}", input_prefix);
+        return Ok(());
+    }
+
+    matches.sort_by(|a, b| b.0.cmp(&a.0));
+
+    let mut result = input_prefix.clone();
+
+    for (pos, len) in matches {
+        if pos + len <= result.len() {
+            let before = &result[..pos];
+            let middle = &result[pos..pos + len];
+            let after = &result[pos + len..];
+
+            result = format!("{}{}{}", before, middle.green(), after);
+        }
+    }
 
     println!("{}", result);
-
     Ok(())
 }
