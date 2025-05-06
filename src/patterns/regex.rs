@@ -6,11 +6,12 @@ pub fn regex_match(input: &str, pattern: &str) -> Result<Vec<(usize, usize)>, re
     let re = RegexBuilder::new(pattern)
         .dot_matches_new_line(false) // Changed to false so the dot doesn't match newlines
         .build()?;
-    
+
     // Collect matches with their positions and lengths
-    let matches: Vec<(usize, usize)> = re.find_iter(input)
+    let matches: Vec<(usize, usize)> = re
+        .find_iter(input)
         .map(|m| (m.start(), m.end() - m.start()))
         .collect();
-    
-    Ok(matches)
+
+    Ok(matches) // Return the matches vector wrapped in Ok
 }

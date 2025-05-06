@@ -14,7 +14,7 @@ fn badcharheuristic(s: &str) -> Vec<usize> {
 }
 
 /* Uses Boyer-Moore algorithm take text and pattern as input*/
-pub fn simple_pattern(text: &str, pattern: &str, case_sensitive: bool) -> Vec<usize> {
+pub fn simple_pattern(text: &str, pattern: &str, case_sensitive: bool) -> Vec<(usize, usize)> {
     let text_bytes = text.as_bytes();
     let pattern_bytes = pattern.as_bytes();
     let pattern_len = pattern_bytes.len();
@@ -23,6 +23,7 @@ pub fn simple_pattern(text: &str, pattern: &str, case_sensitive: bool) -> Vec<us
     let bad_char = badcharheuristic(pattern);
 
     let mut index = Vec::new();
+    let mut matches = Vec::new();
 
     while skip <= text_len - pattern_len {
         let mut j = pattern_len as i32 - 1;
@@ -65,5 +66,8 @@ pub fn simple_pattern(text: &str, pattern: &str, case_sensitive: bool) -> Vec<us
             skip += shift as usize;
         }
     }
-    index
+    for pos in index {
+        matches.push((pos, pattern_len));
+    }
+    matches
 }
