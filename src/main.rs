@@ -37,7 +37,7 @@ fn main() -> Result<(), io::Error> {
                 .short('o')
                 .long("only-matching")
                 .action(ArgAction::SetTrue)
-                .help("show only the pattern"),
+                .help("show only the pattern matches"),
         )
         .arg(
             Arg::new("pattern")
