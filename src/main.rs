@@ -5,7 +5,6 @@ use libc::{STDIN_FILENO, isatty};
 use patterns::regex::regex_match;
 use patterns::simple::simple_pattern;
 use regex::Regex;
-use std::env;
 use std::io::{self, Read};
 
 // Input reader from the prefix of the program
@@ -21,12 +20,6 @@ fn read_input_command_prefix() -> Result<String, io::Error> {
     }
 }
 
-// Input reader from the suffix of the program
-fn read_input_command_suffix() -> Result<String, io::Error> {
-    let args: Vec<String> = env::args().skip(1).collect();
-    Ok(args.join(" "))
-}
-
 fn main() -> Result<(), io::Error> {
     let matches = Command::new("grup")
         .version("1.0")
@@ -40,22 +33,30 @@ fn main() -> Result<(), io::Error> {
                 .help("Ignore case distinctions in patterns"),
         )
         .arg(
+            Arg::new("only-matching")
+                .short('o')
+                .long("only-matching")
+                .action(ArgAction::SetTrue)
+                .help("show only the pattern"),
+        )
+        .arg(
             Arg::new("pattern")
                 .value_name("PATTERN")
                 .help("The pattern to search for")
                 .required(true),
         )
+        .allow_hyphen_values(true)
         .get_matches();
+
+    let pattern = matches.get_one::<String>("pattern").unwrap();
+    let ignore_case = matches.get_flag("ignore-case");
     let input_prefix = read_input_command_prefix()?;
-    let input_suffix = read_input_command_suffix()?;
+    let input_suffix = pattern;
 
     if input_suffix.is_empty() {
         println!("{}", input_prefix);
         return Ok(());
     }
-
-    let pattern = matches.get_one::<String>("pattern").unwrap();
-    let ignore_case = matches.get_flag("ignore-case");
 
     let positions = if Regex::new(r"[.^$*+?()\\[\\]{}|\\]")
         .unwrap()
@@ -84,16 +85,26 @@ fn main() -> Result<(), io::Error> {
 
     let mut result = input_prefix.clone();
 
-    for (pos, len) in sorted_matches {
-        if pos + len <= result.len() {
-            let before = &result[..pos];
-            let middle = &result[pos..pos + len];
-            let after = &result[pos + len..];
-
-            result = format!("{}{}{}", before, middle.green(), after);
+    if matches.get_flag("only-matching") {
+        // Print each match individually
+        for (pos, len) in sorted_matches {
+            if pos + len <= result.len() {
+                let middle = &result[pos..pos + len];
+                println!("{}", middle.green());
+            }
         }
+    } else {
+        // Highlight matches in the full string
+        for (pos, len) in sorted_matches {
+            if pos + len <= result.len() {
+                let before: &str = &result[..pos];
+                let middle: &str = &result[pos..pos + len];
+                let after: &str = &result[pos + len..];
+                result = format!("{}{}{}", before, middle.green(), after);
+            }
+        }
+        println!("{}", result);
     }
 
-    println!("{}", result);
     Ok(())
 }
