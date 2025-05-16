@@ -15,7 +15,8 @@ fn read_input_command_prefix() -> Result<String, io::Error> {
             io::stdin().read_to_string(&mut buffer)?;
             Ok(buffer)
         } else {
-            Ok("Usage: grup [OPTION]... PATTERNS [FILE]...".to_string())
+            eprintln!("Error: No input provided. Usage: grup [OPTION]... PATTERNS [FILE]...");
+            std::process::exit(1);
         }
     }
 }
@@ -40,6 +41,14 @@ fn main() -> Result<(), io::Error> {
                 .help("show only the pattern matches"),
         )
         .arg(
+            Arg::new("max-count")
+                .short('m')
+                .long("max-count")
+                .value_name("NUM")
+                .action(ArgAction::Set)
+                .help("stop after NUM selected lines"),
+        )
+        .arg(
             Arg::new("pattern")
                 .value_name("PATTERN")
                 .help("The pattern to search for")
@@ -51,14 +60,9 @@ fn main() -> Result<(), io::Error> {
     let pattern = matches.get_one::<String>("pattern").unwrap();
     let ignore_case = matches.get_flag("ignore-case");
     let input_prefix = read_input_command_prefix()?;
-    let input_suffix = pattern;
+    let _input_suffix = pattern;
 
-    if input_suffix.is_empty() {
-        println!("{}", input_prefix);
-        return Ok(());
-    }
-
-    let positions = if Regex::new(r"[.^$*+?()\\[\\]{}|\\]")
+    let positions = if Regex::new(r"[.^$*+?()\[\]{}|\\]")
         .unwrap()
         .is_match(pattern)
     {
@@ -71,8 +75,13 @@ fn main() -> Result<(), io::Error> {
             }
         }
     } else {
-        // Simple pattern matching
-        simple_pattern(&input_prefix, pattern, !ignore_case)
+        let positions: Vec<(usize, usize)> = if pattern.is_empty() {
+            Vec::new()
+        } else {
+            // Simple pattern matching
+            simple_pattern(&input_prefix, pattern, !ignore_case)
+        };
+        positions
     };
 
     if positions.is_empty() {
@@ -80,10 +89,24 @@ fn main() -> Result<(), io::Error> {
         return Ok(());
     }
 
+    //Helper function to highlight the result
+    fn highlighter_function(result: String, match_index: Vec<(usize, usize)>) -> String {
+        let mut highlighted_result = result.clone();
+        for (pos, len) in match_index {
+            if pos + len <= highlighted_result.len() {
+                let before: &str = &highlighted_result[..pos];
+                let middle: &str = &highlighted_result[pos..(pos + len) as usize];
+                let after: &str = &highlighted_result[(pos + len) as usize..];
+                highlighted_result = format!("{}{}{}", before, middle.green(), after);
+            }
+        }
+        highlighted_result
+    }
+
     let mut sorted_matches = positions;
     sorted_matches.sort_by(|a, b| b.0.cmp(&a.0));
 
-    let mut result = input_prefix.clone();
+    let result = input_prefix.clone();
 
     if matches.get_flag("only-matching") {
         // Print each match individually
@@ -93,17 +116,28 @@ fn main() -> Result<(), io::Error> {
                 println!("{}", middle.green());
             }
         }
-    } else {
-        // Highlight matches in the full string
-        for (pos, len) in sorted_matches {
-            if pos + len <= result.len() {
-                let before: &str = &result[..pos];
-                let middle: &str = &result[pos..pos + len];
-                let after: &str = &result[pos + len..];
-                result = format!("{}{}{}", before, middle.green(), after);
+    } else if matches.contains_id("max-count") {
+        if let Some(max_count_str) = matches.get_one::<String>("max-count") {
+            if let Ok(max_count) = max_count_str.parse::<usize>() {
+                let mut max_result = String::new();
+                let mut line_count = 0;
+                for char in result.chars() {
+                    if line_count >= max_count {
+                        break;
+                    }
+                    if char == '\n' {
+                        line_count += 1;
+                    }
+                    max_result.push(char);
+                }
+                println!("{}", highlighter_function(max_result, sorted_matches));
+            } else {
+                eprintln!("Invalid max-count value: {}", max_count_str);
             }
         }
-        println!("{}", result);
+    } else {
+        // Highlight matches in the full string
+        println!("{}", highlighter_function(result, sorted_matches));
     }
 
     Ok(())

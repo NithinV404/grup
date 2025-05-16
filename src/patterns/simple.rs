@@ -5,6 +5,9 @@ or ASCII equivalent with position of the character in the pattern*/
 
 //Helper function to calculate the bad character heuristic
 fn badcharheuristic(s: &str) -> Vec<usize> {
+    if s.len() == 0 {
+        return vec![usize::MAX; 256];
+    }
     let ascii_char = 256;
     let mut bad_char = vec![usize::MAX; ascii_char];
     for (i, c) in s.chars().enumerate() {
@@ -15,6 +18,9 @@ fn badcharheuristic(s: &str) -> Vec<usize> {
 
 /* Uses Boyer-Moore algorithm take text and pattern as input*/
 pub fn simple_pattern(text: &str, pattern: &str, case_sensitive: bool) -> Vec<(usize, usize)> {
+    if pattern.is_empty() {
+        return Vec::new();
+    }
     let text_bytes = text.as_bytes();
     let pattern_bytes = pattern.as_bytes();
     let pattern_len = pattern_bytes.len();
@@ -30,6 +36,9 @@ pub fn simple_pattern(text: &str, pattern: &str, case_sensitive: bool) -> Vec<(u
 
         // Modified character comparison based on case sensitivity
         while j >= 0 {
+            if skip + j as usize >= text_len {
+                break;
+            }
             let text_char = text_bytes[skip + j as usize];
             let pattern_char = pattern_bytes[j as usize];
 
@@ -62,7 +71,7 @@ pub fn simple_pattern(text: &str, pattern: &str, case_sensitive: bool) -> Vec<(u
             };
         } else {
             let text_char = text_bytes[skip + j as usize] as usize;
-            let shift = max(1, j - bad_char[text_char] as i32);
+            let shift = max(1, (j as i32) - (bad_char[text_char] as i32));
             skip += shift as usize;
         }
     }
