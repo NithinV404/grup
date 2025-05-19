@@ -119,18 +119,17 @@ fn main() -> Result<(), io::Error> {
     } else if matches.contains_id("max-count") {
         if let Some(max_count_str) = matches.get_one::<String>("max-count") {
             if let Ok(max_count) = max_count_str.parse::<usize>() {
-                let mut max_result = String::new();
-                let mut line_count = 0;
-                for char in result.chars() {
-                    if line_count >= max_count {
-                        break;
-                    }
-                    if char == '\n' {
+                let mut line_count = 1;
+                for line in highlighter_function(result, sorted_matches).lines() {
+                    if line_count <= max_count {
+                        println!("{}", line);
                         line_count += 1;
+                    } else {
+                        {
+                            break;
+                        }
                     }
-                    max_result.push(char);
                 }
-                println!("{}", highlighter_function(max_result, sorted_matches));
             } else {
                 eprintln!("Invalid max-count value: {}", max_count_str);
             }
