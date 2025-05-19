@@ -97,7 +97,7 @@ fn main() -> Result<(), io::Error> {
                 let before: &str = &highlighted_result[..pos];
                 let middle: &str = &highlighted_result[pos..(pos + len) as usize];
                 let after: &str = &highlighted_result[(pos + len) as usize..];
-                highlighted_result = format!("{}{}{}", before, middle.green(), after);
+                highlighted_result = format!("{}{}{}", before, middle.red().bold(), after);
             }
         }
         highlighted_result
@@ -113,7 +113,7 @@ fn main() -> Result<(), io::Error> {
         for (pos, len) in sorted_matches {
             if pos + len <= result.len() {
                 let middle = &result[pos..pos + len];
-                println!("{}", middle.green());
+                println!("{}", middle.red().bold());
             }
         }
     } else if matches.contains_id("max-count") {
@@ -137,7 +137,12 @@ fn main() -> Result<(), io::Error> {
         }
     } else {
         // Highlight matches in the full string
-        println!("{}", highlighter_function(result, sorted_matches));
+        let temp = highlighter_function(result, sorted_matches);
+        for line in temp.lines() {
+            if line.contains("\x1b[1;31m") && line.contains("\x1b[0m") {
+                println!("{}", line);
+            }
+        }
     }
 
     Ok(())
