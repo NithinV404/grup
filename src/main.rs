@@ -115,15 +115,17 @@ fn main() -> Result<(), io::Error> {
 
     let result = input_prefix.clone();
 
+    // Print only the matching pattern
     if matches.get_flag("only-matching") {
-        // Print each match individually
         for (pos, len) in sorted_matches {
             if pos + len <= result.len() {
                 let middle = &result[pos..pos + len];
                 println!("{}", middle.red().bold());
             }
         }
-    } else if matches.contains_id("max-count") {
+    }
+    // Prints the number of line count specified with -m=NUM flag
+    else if matches.contains_id("max-count") {
         if let Some(max_count_str) = matches.get_one::<String>("max-count") {
             if let Ok(max_count) = max_count_str.parse::<usize>() {
                 let mut line_count = 1;
@@ -141,7 +143,9 @@ fn main() -> Result<(), io::Error> {
                 eprintln!("Invalid max-count value: {}", max_count_str);
             }
         }
-    } else if matches.get_flag("invert-match") {
+    }
+    // Prints the non matching lines in the given input
+    else if matches.get_flag("invert-match") {
         for line in highlighter_function(result, sorted_matches).lines() {
             if line.contains("\x1b[1;31m") && line.contains("\x1b[0m") {
                 continue;
@@ -150,7 +154,7 @@ fn main() -> Result<(), io::Error> {
             }
         }
     } else {
-        // Highlight matches in the full string
+        // Prints the regular case sensitive match for given input
         for line in highlighter_function(result, sorted_matches).lines() {
             if line.contains("\x1b[1;31m") && line.contains("\x1b[0m") {
                 println!("{}", line);
