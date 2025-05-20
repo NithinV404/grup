@@ -49,6 +49,13 @@ fn main() -> Result<(), io::Error> {
                 .help("stop after NUM selected lines"),
         )
         .arg(
+            Arg::new("invert-match")
+                .short('v')
+                .long("invert-match")
+                .help("select non-matching lines")
+                .action(ArgAction::SetTrue),
+        )
+        .arg(
             Arg::new("pattern")
                 .value_name("PATTERN")
                 .help("The pattern to search for")
@@ -134,10 +141,17 @@ fn main() -> Result<(), io::Error> {
                 eprintln!("Invalid max-count value: {}", max_count_str);
             }
         }
+    } else if matches.get_flag("invert-match") {
+        for line in highlighter_function(result, sorted_matches).lines() {
+            if line.contains("\x1b[1;31m") && line.contains("\x1b[0m") {
+                continue;
+            } else {
+                println!("{}", line);
+            }
+        }
     } else {
         // Highlight matches in the full string
-        let temp = highlighter_function(result, sorted_matches);
-        for line in temp.lines() {
+        for line in highlighter_function(result, sorted_matches).lines() {
             if line.contains("\x1b[1;31m") && line.contains("\x1b[0m") {
                 println!("{}", line);
             }
