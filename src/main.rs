@@ -31,6 +31,7 @@ fn main() -> Result<(), io::Error> {
                 .short('i')
                 .long("ignore-case")
                 .action(ArgAction::SetTrue)
+                .group("matching-options")
                 .help("Ignore case distinctions in patterns"),
         )
         .arg(
@@ -38,6 +39,7 @@ fn main() -> Result<(), io::Error> {
                 .short('o')
                 .long("only-matching")
                 .action(ArgAction::SetTrue)
+                .group("output-control")
                 .help("show only the pattern matches"),
         )
         .arg(
@@ -46,6 +48,7 @@ fn main() -> Result<(), io::Error> {
                 .long("max-count")
                 .value_name("NUM")
                 .action(ArgAction::Set)
+                .group("output-control")
                 .help("stop after NUM selected lines"),
         )
         .arg(
@@ -53,6 +56,7 @@ fn main() -> Result<(), io::Error> {
                 .short('v')
                 .long("invert-match")
                 .help("select non-matching lines")
+                .group("miscellaneous")
                 .action(ArgAction::SetTrue),
         )
         .arg(
@@ -69,6 +73,7 @@ fn main() -> Result<(), io::Error> {
     let input_prefix = read_input_command_prefix()?;
     let _input_suffix = pattern;
 
+    // Checks if the pattern is a valid regex pattern and performs regex matching
     let positions = if Regex::new(r"[.^$*+?()\[\]{}|\\]")
         .unwrap()
         .is_match(pattern)
@@ -96,24 +101,23 @@ fn main() -> Result<(), io::Error> {
         return Ok(());
     }
 
+    let mut sorted_matches = positions;
+    sorted_matches.sort_by(|a, b| b.0.cmp(&a.0));
+    let result = input_prefix.clone();
+
     //Helper function to highlight the result
     fn highlighter_function(result: String, match_index: Vec<(usize, usize)>) -> String {
-        let mut highlighted_result = result.clone();
+        let mut highlighted_result = String::new();
         for (pos, len) in match_index {
-            if pos + len <= highlighted_result.len() {
-                let before: &str = &highlighted_result[..pos];
-                let middle: &str = &highlighted_result[pos..(pos + len) as usize];
-                let after: &str = &highlighted_result[(pos + len) as usize..];
+            if pos + len <= result.len() {
+                let before: &str = &result[..pos];
+                let middle: &str = &result[pos..(pos + len) as usize];
+                let after: &str = &result[(pos + len) as usize..];
                 highlighted_result = format!("{}{}{}", before, middle.red().bold(), after);
             }
         }
         highlighted_result
     }
-
-    let mut sorted_matches = positions;
-    sorted_matches.sort_by(|a, b| b.0.cmp(&a.0));
-
-    let result = input_prefix.clone();
 
     // Print only the matching pattern
     if matches.get_flag("only-matching") {
@@ -153,8 +157,9 @@ fn main() -> Result<(), io::Error> {
                 println!("{}", line);
             }
         }
-    } else {
-        // Prints the regular case sensitive match for given input
+    }
+    // Prints the regular case sensitive match for given input
+    else {
         for line in highlighter_function(result, sorted_matches).lines() {
             if line.contains("\x1b[1;31m") && line.contains("\x1b[0m") {
                 println!("{}", line);
